@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node test-auth.js"
+    "test": "node tests/integration/test-auth.js"
   },
   "keywords": ["postgresql", "authentication", "nodejs", "docker"],
   "author": "Your Name",

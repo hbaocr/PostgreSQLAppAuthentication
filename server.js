@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { testConnection } from './config/database.js';
-import authRoutes from './routes/authRoutes.js';
+import { testConnection } from './src/config/database.js';
+import authRoutes from './src/routes/authRoutes.js';
+import { requestLogger } from './src/middleware/requestLogger.js';
+import { errorHandler, notFoundHandler } from './src/middleware/errorHandler.js';
 
 // Load environment variables
 dotenv.config();
@@ -16,10 +18,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
+app.use(requestLogger);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -54,27 +53,15 @@ app.get('/', (req, res) => {
       login: 'POST /api/auth/login',
       getUser: 'GET /api/auth/user/:email'
     },
-    documentation: 'Check the README.md for detailed API documentation'
+    documentation: 'Check the docs/ directory for detailed API documentation'
   });
 });
 
 // 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`
-  });
-});
+app.use('*', notFoundHandler);
 
 // Global error handler
-app.use((error, req, res, next) => {
-  console.error('Global error handler:', error);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
-  });
-});
+app.use(errorHandler);
 
 // Start server
 const startServer = async () => {

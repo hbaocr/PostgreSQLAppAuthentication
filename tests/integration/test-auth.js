@@ -1,5 +1,5 @@
-import { AuthService } from './services/authService.js';
-import { testConnection } from './config/database.js';
+import { AuthService } from '../../src/services/authService.js';
+import { testConnection } from '../../src/config/database.js';
 import dotenv from 'dotenv';
 
 // Load environment variables

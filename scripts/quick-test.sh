@@ -151,7 +151,7 @@ echo "   - SECURITY DEFINER functions for secure database access"
 echo ""
 print_status $YELLOW "💡 Next Steps:"
 echo "   1. Run comprehensive tests: npm test"
-echo "   2. Check the API documentation in README-NODEJS.md"
+echo "   2. Check the API documentation in docs/api/"
 echo "   3. Use pgAdmin at http://localhost:8080 to view database (as postgres user)"
 echo "   4. Database administration requires postgres user credentials"
 
