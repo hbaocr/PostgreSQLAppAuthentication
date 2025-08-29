@@ -99,4 +99,154 @@ export class AuthService {
       };
     }
   }
+
+  /**
+   * Delete a user using PostgreSQL function
+   * @param {string} email - User email
+   * @returns {Promise<Object>} Result object
+   */
+  static async deleteUser(email) {
+    try {
+      const query = 'SELECT delete_user($1) as success';
+      const result = await pool.query(query, [email]);
+      
+      if (result.rows[0].success) {
+        return {
+          success: true,
+          message: 'User deleted successfully',
+          email
+        };
+      } else {
+        return {
+          success: false,
+          message: 'User deletion failed'
+        };
+      }
+    } catch (error) {
+      console.error('Delete user error:', error.message);
+      return {
+        success: false,
+        message: error.message,
+        error: error.code
+      };
+    }
+  }
+
+  /**
+   * Change user password using PostgreSQL function
+   * @param {string} email - User email
+   * @param {string} oldPassword - Current password
+   * @param {string} newPassword - New password
+   * @returns {Promise<Object>} Result object
+   */
+  static async changePassword(email, oldPassword, newPassword) {
+    try {
+      const query = 'SELECT change_password($1, $2, $3) as success';
+      const result = await pool.query(query, [email, oldPassword, newPassword]);
+      
+      if (result.rows[0].success) {
+        return {
+          success: true,
+          message: 'Password changed successfully',
+          email
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Password change failed'
+        };
+      }
+    } catch (error) {
+      console.error('Change password error:', error.message);
+      return {
+        success: false,
+        message: error.message,
+        error: error.code
+      };
+    }
+  }
+
+  /**
+   * Change user email using PostgreSQL function
+   * @param {string} oldEmail - Current email
+   * @param {string} newEmail - New email
+   * @param {string} password - User password for verification
+   * @returns {Promise<Object>} Result object
+   */
+  static async changeEmail(oldEmail, newEmail, password) {
+    try {
+      const query = 'SELECT change_email($1, $2, $3) as success';
+      const result = await pool.query(query, [oldEmail, newEmail, password]);
+      
+      if (result.rows[0].success) {
+        return {
+          success: true,
+          message: 'Email changed successfully',
+          oldEmail,
+          newEmail
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Email change failed'
+        };
+      }
+    } catch (error) {
+      console.error('Change email error:', error.message);
+      return {
+        success: false,
+        message: error.message,
+        error: error.code
+      };
+    }
+  }
+
+  /**
+   * Get all users using PostgreSQL function
+   * @returns {Promise<Object>} Result object
+   */
+  static async getAllUsers() {
+    try {
+      const query = 'SELECT * FROM get_all_users()';
+      const result = await pool.query(query);
+      
+      return {
+        success: true,
+        users: result.rows,
+        count: result.rows.length
+      };
+    } catch (error) {
+      console.error('Get all users error:', error.message);
+      return {
+        success: false,
+        message: error.message,
+        error: error.code
+      };
+    }
+  }
+
+  /**
+   * Check if user exists using PostgreSQL function
+   * @param {string} email - User email
+   * @returns {Promise<Object>} Result object
+   */
+  static async userExists(email) {
+    try {
+      const query = 'SELECT user_exists($1) as exists';
+      const result = await pool.query(query, [email]);
+      
+      return {
+        success: true,
+        exists: result.rows[0].exists,
+        email
+      };
+    } catch (error) {
+      console.error('User exists check error:', error.message);
+      return {
+        success: false,
+        message: error.message,
+        error: error.code
+      };
+    }
+  }
 }

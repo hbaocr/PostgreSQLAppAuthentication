@@ -112,6 +112,191 @@ const testGetUserDetails = async () => {
   }
 };
 
+const testUserExists = async () => {
+  print(colors.blue, '\n🔍 Testing User Exists Check...');
+  
+  for (const user of testUsers) {
+    try {
+      const result = await AuthService.userExists(user.email);
+      printResult(
+        `User Exists Check for ${user.email}`,
+        result.success && result.exists,
+        result.success ? `User exists: ${result.exists}` : result.message
+      );
+    } catch (error) {
+      printResult(`User Exists Check for ${user.email}`, false, error.message);
+    }
+  }
+  
+  // Test non-existent user
+  try {
+    const result = await AuthService.userExists('nonexistent@example.com');
+    printResult(
+      'User Exists Check for non-existent user',
+      result.success && !result.exists,
+      result.success ? `User exists: ${result.exists}` : result.message
+    );
+  } catch (error) {
+    printResult('User Exists Check for non-existent user', false, error.message);
+  }
+};
+
+const testGetAllUsers = async () => {
+  print(colors.blue, '\n📋 Testing Get All Users...');
+  
+  try {
+    const result = await AuthService.getAllUsers();
+    printResult(
+      'Get All Users',
+      result.success,
+      result.success ? `Found ${result.count} users` : result.message
+    );
+    
+    if (result.success && result.users.length > 0) {
+      print(colors.cyan, '   Users found:');
+      result.users.forEach(user => {
+        print(colors.cyan, `   - ${user.email} (ID: ${user.user_id})`);
+      });
+    }
+  } catch (error) {
+    printResult('Get All Users', false, error.message);
+  }
+};
+
+const testChangePassword = async () => {
+  print(colors.blue, '\n🔑 Testing Change Password...');
+  
+  const testUser = testUsers[0]; // Use first user
+  const newPassword = 'newpassword123';
+  
+  try {
+    // Change password
+    const changeResult = await AuthService.changePassword(testUser.email, testUser.password, newPassword);
+    printResult(
+      `Change Password for ${testUser.email}`,
+      changeResult.success,
+      changeResult.success ? 'Password changed successfully' : changeResult.message
+    );
+    
+    if (changeResult.success) {
+      // Test authentication with new password
+      const authResult = await AuthService.authenticate(testUser.email, newPassword);
+      printResult(
+        `Authenticate with new password for ${testUser.email}`,
+        authResult.success,
+        authResult.success ? 'Authentication successful with new password' : 'Failed to authenticate with new password'
+      );
+      
+      // Test authentication with old password (should fail)
+      const oldAuthResult = await AuthService.authenticate(testUser.email, testUser.password);
+      printResult(
+        `Authenticate with old password for ${testUser.email}`,
+        !oldAuthResult.success,
+        oldAuthResult.success ? 'Unexpectedly authenticated with old password' : 'Correctly rejected old password'
+      );
+      
+      // Change password back to original
+      const revertResult = await AuthService.changePassword(testUser.email, newPassword, testUser.password);
+      printResult(
+        `Revert Password for ${testUser.email}`,
+        revertResult.success,
+        revertResult.success ? 'Password reverted successfully' : revertResult.message
+      );
+    }
+  } catch (error) {
+    printResult(`Change Password for ${testUser.email}`, false, error.message);
+  }
+};
+
+const testChangeEmail = async () => {
+  print(colors.blue, '\n📧 Testing Change Email...');
+  
+  const testUser = testUsers[1]; // Use second user
+  const newEmail = 'jane.updated@example.com';
+  
+  try {
+    // Change email
+    const changeResult = await AuthService.changeEmail(testUser.email, newEmail, testUser.password);
+    printResult(
+      `Change Email for ${testUser.email}`,
+      changeResult.success,
+      changeResult.success ? `Email changed to ${newEmail}` : changeResult.message
+    );
+    
+    if (changeResult.success) {
+      // Test authentication with new email
+      const authResult = await AuthService.authenticate(newEmail, testUser.password);
+      printResult(
+        `Authenticate with new email ${newEmail}`,
+        authResult.success,
+        authResult.success ? 'Authentication successful with new email' : 'Failed to authenticate with new email'
+      );
+      
+      // Test authentication with old email (should fail)
+      const oldAuthResult = await AuthService.authenticate(testUser.email, testUser.password);
+      printResult(
+        `Authenticate with old email ${testUser.email}`,
+        !oldAuthResult.success,
+        oldAuthResult.success ? 'Unexpectedly authenticated with old email' : 'Correctly rejected old email'
+      );
+      
+      // Change email back to original
+      const revertResult = await AuthService.changeEmail(newEmail, testUser.email, testUser.password);
+      printResult(
+        `Revert Email for ${newEmail}`,
+        revertResult.success,
+        revertResult.success ? `Email reverted to ${testUser.email}` : revertResult.message
+      );
+    }
+  } catch (error) {
+    printResult(`Change Email for ${testUser.email}`, false, error.message);
+  }
+};
+
+const testDeleteUser = async () => {
+  print(colors.blue, '\n🗑️  Testing Delete User...');
+  
+  const testUser = testUsers[2]; // Use third user
+  
+  try {
+    // Delete user
+    const deleteResult = await AuthService.deleteUser(testUser.email);
+    printResult(
+      `Delete User ${testUser.email}`,
+      deleteResult.success,
+      deleteResult.success ? 'User deleted successfully' : deleteResult.message
+    );
+    
+    if (deleteResult.success) {
+      // Test that user no longer exists
+      const existsResult = await AuthService.userExists(testUser.email);
+      printResult(
+        `User Exists Check after deletion for ${testUser.email}`,
+        existsResult.success && !existsResult.exists,
+        existsResult.success ? `User exists: ${existsResult.exists}` : existsResult.message
+      );
+      
+      // Test authentication with deleted user (should fail)
+      const authResult = await AuthService.authenticate(testUser.email, testUser.password);
+      printResult(
+        `Authenticate deleted user ${testUser.email}`,
+        !authResult.success,
+        authResult.success ? 'Unexpectedly authenticated deleted user' : 'Correctly rejected deleted user'
+      );
+      
+      // Recreate the user for future tests
+      const recreateResult = await AuthService.signup(testUser.userId, testUser.email, testUser.password);
+      printResult(
+        `Recreate User ${testUser.email}`,
+        recreateResult.success,
+        recreateResult.success ? 'User recreated successfully' : recreateResult.message
+      );
+    }
+  } catch (error) {
+    printResult(`Delete User ${testUser.email}`, false, error.message);
+  }
+};
+
 const testDuplicateSignup = async () => {
   print(colors.blue, '\n🚫 Testing Duplicate Signup Prevention...');
   
@@ -147,7 +332,7 @@ const testInvalidInputs = async () => {
 
 // Main test runner
 const runAllTests = async () => {
-  print(colors.bright + colors.magenta, '🚀 PostgreSQL Authentication Test Suite (Secure Mode)');
+  print(colors.bright + colors.magenta, '🚀 PostgreSQL Authentication Test Suite (Full Features)');
   print(colors.cyan, '==============================================================');
   
   try {
@@ -162,11 +347,16 @@ const runAllTests = async () => {
     await testUserSignup();
     await testUserAuthentication();
     await testGetUserDetails();
+    await testUserExists();
+    await testGetAllUsers();
+    await testChangePassword();
+    await testChangeEmail();
+    await testDeleteUser();
     await testDuplicateSignup();
     await testInvalidInputs();
     
     print(colors.bright + colors.green, '\n🎉 All tests completed!');
-    print(colors.yellow, '💡 Note: User management operations (list/delete) are restricted to database administrators only.');
+    print(colors.yellow, '💡 All user management operations are now available through the API.');
     
   } catch (error) {
     print(colors.red, `\n💥 Test suite failed with error: ${error.message}`);

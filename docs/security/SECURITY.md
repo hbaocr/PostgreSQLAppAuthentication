@@ -87,7 +87,7 @@ The `authuser` can only:
 
 ### 3. Password Security
 - SHA256 hashing with random salts
-- Salt generation using `gen_random_bytes()`
+- Salt generation using `gen_random_bytes(32)` (32 bytes = 64 hex characters)
 - No plaintext password storage
 
 ### 4. Error Handling

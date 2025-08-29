@@ -125,4 +125,176 @@ router.get('/user/:email', async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /api/auth/user/:email
+ * @desc Delete a user
+ * @access Public (for testing)
+ */
+router.delete('/user/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email parameter is required'
+      });
+    }
+
+    const result = await AuthService.deleteUser(email);
+    
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Delete user route error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route PUT /api/auth/user/password
+ * @desc Change user password
+ * @access Public (for testing)
+ */
+router.put('/user/password', async (req, res) => {
+  try {
+    const { email, oldPassword, newPassword } = req.body;
+
+    // Validation
+    if (!email || !oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: email, oldPassword, newPassword'
+      });
+    }
+
+    if (typeof newPassword !== 'string' || newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long'
+      });
+    }
+
+    const result = await AuthService.changePassword(email, oldPassword, newPassword);
+    
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Change password route error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route PUT /api/auth/user/email
+ * @desc Change user email
+ * @access Public (for testing)
+ */
+router.put('/user/email', async (req, res) => {
+  try {
+    const { oldEmail, newEmail, password } = req.body;
+
+    // Validation
+    if (!oldEmail || !newEmail || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: oldEmail, newEmail, password'
+      });
+    }
+
+    if (typeof newEmail !== 'string' || !newEmail.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid new email format'
+      });
+    }
+
+    const result = await AuthService.changeEmail(oldEmail, newEmail, password);
+    
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Change email route error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/auth/users
+ * @desc Get all users
+ * @access Public (for testing)
+ */
+router.get('/users', async (req, res) => {
+  try {
+    const result = await AuthService.getAllUsers();
+    
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Get all users route error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/auth/user/:email/exists
+ * @desc Check if user exists
+ * @access Public (for testing)
+ */
+router.get('/user/:email/exists', async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email parameter is required'
+      });
+    }
+
+    const result = await AuthService.userExists(email);
+    
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('User exists route error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 export default router;

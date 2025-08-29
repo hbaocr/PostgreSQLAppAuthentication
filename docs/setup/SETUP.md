@@ -94,7 +94,7 @@ The `userAuth` table includes:
 
 ## Security Features
 
-- **Salt Generation:** Uses `gen_random_bytes()` for cryptographically secure random salts
+- **Salt Generation:** Uses `gen_random_bytes(32)` for cryptographically secure random salts (32 bytes = 64 hex characters)
 - **SHA256 Hashing:** Implements SHA256 hashing as requested (not PostgreSQL crypt)
 - **Input Validation:** Functions include proper error handling and validation
 - **Unique Constraints:** Email addresses must be unique

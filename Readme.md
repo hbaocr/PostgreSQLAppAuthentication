@@ -259,24 +259,53 @@ SELECT * FROM pg_stat_user_functions;
 
 ```
 PostgresqlAuth/
-├── docker-compose.yml          # Docker services configuration
-├── Dockerfile                  # PostgreSQL custom image
-├── init.sql                    # Database initialization
-├── package.json                # Node.js dependencies
-├── server.js                   # Express server
-├── config/
-│   └── database.js             # Database connection
-├── services/
-│   └── authService.js          # Authentication business logic
-├── routes/
-│   └── authRoutes.js           # API routes
-├── test-auth.js                # Comprehensive test suite
-├── quick-test.sh               # Quick API test script
-├── env.example                 # Environment variables template
-├── SECURITY.md                 # Security documentation
-├── README-NODEJS.md            # Node.js API documentation
-└── SETUP.md                    # Setup guide
+├── 📄 README.md                    # Main project documentation
+├── 📄 .gitignore                   # Git ignore rules
+├── 📄 package.json                 # Node.js dependencies and scripts
+├── 📄 env.example                  # Environment variables template
+├── 📄 server.js                    # Main Express server entry point
+├── 📄 docker-compose.yml           # Docker services configuration
+│
+├── 📁 src/                         # Source code directory
+│   ├── 📁 config/                  # Configuration files
+│   │   └── 📄 database.js          # Database connection configuration
+│   ├── 📁 services/                # Business logic layer
+│   │   └── 📄 authService.js       # Authentication service
+│   ├── 📁 routes/                  # API route definitions
+│   │   └── 📄 authRoutes.js        # Authentication routes
+│   ├── 📁 middleware/              # Express middleware
+│   │   ├── 📄 errorHandler.js      # Global error handling
+│   │   └── 📄 requestLogger.js     # Request logging middleware
+│   └── 📁 utils/                   # Utility functions
+│       └── 📄 validation.js        # Input validation utilities
+│
+├── 📁 docs/                        # Documentation directory
+│   ├── 📁 api/                     # API documentation
+│   │   └── 📄 README-NODEJS.md     # Node.js API documentation
+│   ├── 📁 security/                # Security documentation
+│   │   └── 📄 SECURITY.md          # Security architecture
+│   ├── 📁 setup/                   # Setup documentation
+│   │   └── 📄 SETUP.md             # Setup guide
+│   └── 📄 PROJECT_STRUCTURE.md     # Project structure documentation
+│
+├── 📁 tests/                       # Test files
+│   ├── 📁 unit/                    # Unit tests (future)
+│   └── 📁 integration/             # Integration tests
+│       └── 📄 test-auth.js         # Authentication integration tests
+│
+├── 📁 scripts/                     # Utility scripts
+│   └── 📄 quick-test.sh            # Quick API testing script
+│
+└── 📁 docker/                      # Docker-related files
+    ├── 📁 postgres/                # PostgreSQL Docker files
+    │   ├── 📄 Dockerfile           # PostgreSQL custom image
+    │   ├── 📄 .dockerignore        # Docker ignore rules
+    │   ├── 📄 init.sql             # Database initialization
+    │   └── 📄 auth_functions.sql   # Authentication functions
+    └── 📁 nodejs/                  # Node.js Docker files (future)
 ```
+
+*For detailed project structure information, see [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)*
 
 ## 🚨 Troubleshooting
 
@@ -345,9 +374,10 @@ npm start
 
 ## 📚 Documentation
 
-- **[SECURITY.md](SECURITY.md)** - Detailed security architecture
-- **[README-NODEJS.md](README-NODEJS.md)** - Node.js API documentation
-- **[SETUP.md](SETUP.md)** - Complete setup guide
+- **[docs/security/SECURITY.md](docs/security/SECURITY.md)** - Detailed security architecture
+- **[docs/api/README-NODEJS.md](docs/api/README-NODEJS.md)** - Node.js API documentation
+- **[docs/setup/SETUP.md](docs/setup/SETUP.md)** - Complete setup guide
+- **[docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)** - Project structure documentation
 
 ## 🤝 Contributing
 
