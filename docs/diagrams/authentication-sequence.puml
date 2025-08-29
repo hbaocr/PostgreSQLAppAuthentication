@@ -1,0 +1,142 @@
+@startuml PostgreSQL Authentication System Sequence Diagram
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+    ArrowColor #2E86AB
+    ActorBorderColor #2E86AB
+    LifeLineBorderColor #2E86AB
+    ParticipantBorderColor #2E86AB
+    ParticipantBackgroundColor #F8F9FA
+    ParticipantFontColor #2E86AB
+    ActorBackgroundColor #E8F4FD
+    ActorFontColor #2E86AB
+}
+
+title PostgreSQL Authentication System - Secure Sequence Flow
+
+actor "Client Application" as Client
+participant "Node.js Server" as Server
+participant "authuser\n(DB User)" as AuthUser
+participant "PostgreSQL\nFunctions" as Functions
+participant "userAuth Table\n(Protected)" as Table
+participant "postgres\n(Admin User)" as Admin
+
+== Authentication Flow ==
+
+Client -> Server: POST /api/auth/login
+note right: {email: "user@example.com", password: "password123"}
+
+Server -> AuthUser: Connect to database
+AuthUser -> Functions: SELECT authenticate('user@example.com', 'password123')
+
+note over Functions: SECURITY DEFINER\nFunction runs with postgres privileges
+
+Functions -> Table: SELECT salt, hashpass FROM userAuth WHERE mail = 'user@example.com'
+note right: Uses mail index for performance
+
+Table -> Functions: Return salt and hash
+Functions -> Functions: Compute hash: SHA256(salt + password)
+Functions -> Functions: Compare computed vs stored hash
+
+alt Authentication Successful
+    Functions -> AuthUser: Return TRUE
+    AuthUser -> Server: Return TRUE
+    Server -> Client: {success: true, message: "Authentication successful"}
+else Authentication Failed
+    Functions -> AuthUser: Return FALSE
+    AuthUser -> Server: Return FALSE
+    Server -> Client: {success: false, message: "Invalid credentials"}
+end
+
+== User Signup Flow ==
+
+Client -> Server: POST /api/auth/signup
+note right: {userId: 123, email: "new@example.com", password: "newpass123"}
+
+Server -> AuthUser: Connect to database
+AuthUser -> Functions: SELECT signup(123, 'new@example.com', 'newpass123')
+
+note over Functions: SECURITY DEFINER\nFunction runs with postgres privileges
+
+Functions -> Table: SELECT COUNT(*) FROM userAuth WHERE mail = 'new@example.com'
+note right: Check if user already exists
+
+alt User Doesn't Exist
+    Functions -> Functions: Generate random salt (32 bytes)
+    Functions -> Functions: Create hash: SHA256(salt + password)
+    Functions -> Table: INSERT INTO userAuth (userId, mail, salt, hashpass)
+    Table -> Functions: User created successfully
+    Functions -> AuthUser: Return TRUE
+    AuthUser -> Server: Return TRUE
+    Server -> Client: {success: true, message: "User created successfully"}
+else User Already Exists
+    Functions -> AuthUser: RAISE EXCEPTION 'User already exists'
+    AuthUser -> Server: Return FALSE
+    Server -> Client: {success: false, message: "User already exists"}
+end
+
+== User Management Flow ==
+
+Client -> Server: GET /api/auth/user/user@example.com
+Server -> AuthUser: Connect to database
+AuthUser -> Functions: SELECT * FROM get_user_details('user@example.com')
+
+note over Functions: SECURITY DEFINER\nFunction runs with postgres privileges
+
+Functions -> Table: SELECT userId, mail, created_at, updated_at FROM userAuth WHERE mail = 'user@example.com'
+Table -> Functions: Return user details
+Functions -> AuthUser: Return user details
+AuthUser -> Server: Return user data
+Server -> Client: {success: true, user: {...}}
+
+== Password Change Flow ==
+
+Client -> Server: PUT /api/auth/user/password
+note right: {email: "user@example.com", oldPassword: "old123", newPassword: "new123"}
+
+Server -> AuthUser: Connect to database
+AuthUser -> Functions: SELECT change_password('user@example.com', 'old123', 'new123')
+
+note over Functions: SECURITY DEFINER\nFunction runs with postgres privileges
+
+Functions -> Table: SELECT salt, hashpass FROM userAuth WHERE mail = 'user@example.com'
+Table -> Functions: Return current salt and hash
+Functions -> Functions: Verify old password hash
+Functions -> Functions: Generate new salt and hash for new password
+Functions -> Table: UPDATE userAuth SET salt = new_salt, hashpass = new_hash WHERE mail = 'user@example.com'
+Table -> Functions: Password updated successfully
+Functions -> AuthUser: Return TRUE
+AuthUser -> Server: Return TRUE
+Server -> Client: {success: true, message: "Password changed successfully"}
+
+== Security Model Highlights ==
+
+note over Client, Admin: SECURITY FEATURES IMPLEMENTED
+
+note over AuthUser: NO direct table access\nNO schema modification\nNO system catalog access\nONLY function execution
+
+note over Functions: SECURITY DEFINER\nRun with postgres privileges\nControlled privilege escalation\nInput validation\nSQL injection prevention
+
+note over Table: PROTECTED RESOURCE\nOnly accessible through functions\nNo direct user access\nFull audit trail
+
+note over Admin: FULL ADMIN ACCESS\nDirect table access\nSchema modification\nFunction management\nSystem administration
+
+== Error Handling ==
+
+Client -> Server: Invalid request
+Server -> AuthUser: Connect to database
+AuthUser -> Functions: Function call with invalid parameters
+
+alt Input Validation Error
+    Functions -> Functions: Validate input parameters
+    Functions -> AuthUser: RAISE EXCEPTION 'Invalid input'
+    AuthUser -> Server: Return error
+    Server -> Client: {success: false, error: "Invalid input"}
+else Database Error
+    Functions -> Table: Database operation
+    Table -> Functions: Database error
+    Functions -> AuthUser: RAISE EXCEPTION 'Database error'
+    AuthUser -> Server: Return error
+    Server -> Client: {success: false, error: "Database error"}
+end
+
+@enduml

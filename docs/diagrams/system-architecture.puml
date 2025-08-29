@@ -1,0 +1,186 @@
+@startuml PostgreSQL Authentication System Architecture
+skinparam backgroundColor #FFFFFF
+skinparam component {
+    BackgroundColor #F8F9FA
+    BorderColor #2E86AB
+    FontColor #2E86AB
+}
+skinparam database {
+    BackgroundColor #E8F4FD
+    BorderColor #2E86AB
+    FontColor #2E86AB
+}
+skinparam package {
+    BackgroundColor #F0F8FF
+    BorderColor #2E86AB
+    FontColor #2E86AB
+}
+
+title PostgreSQL Authentication System - Complete Architecture
+
+package "Client Layer" {
+    [Web Application] as WebApp
+    [Mobile App] as MobileApp
+    [API Client] as APIClient
+}
+
+package "API Gateway Layer" {
+    [Node.js Express Server] as Server
+    note right of Server
+        Port: 3000
+        CORS enabled
+        Request logging
+        Error handling
+    end note
+}
+
+package "Authentication Layer" {
+    [Authentication Routes] as AuthRoutes
+    [Middleware] as Middleware
+    note right of AuthRoutes
+        /api/auth/signup
+        /api/auth/login
+        /api/auth/user/:email
+        /api/auth/user/password
+        /api/auth/user/email
+        /api/auth/users
+    end note
+}
+
+package "Database Connection Layer" {
+    [Database Config] as DBConfig
+    [Connection Pool] as ConnPool
+    note right of ConnPool
+        Host: localhost
+        Port: 5432
+        Database: authdb
+        User: authuser
+        Password: authuser123
+    end note
+}
+
+package "PostgreSQL Database" {
+    database "userAuth Table" as UserTable {
+        [userId SERIAL PRIMARY KEY] as UserId
+        [mail VARCHAR(255) UNIQUE] as Mail
+        [salt VARCHAR(255)] as Salt
+        [hashpass VARCHAR(255)] as HashPass
+        [created_at TIMESTAMP] as CreatedAt
+        [updated_at TIMESTAMP] as UpdatedAt
+    }
+    
+    database "Indexes" as Indexes {
+        [idx_userauth_mail] as MailIndex
+        [idx_userauth_created_at] as CreatedIndex
+        [idx_userauth_updated_at] as UpdatedIndex
+    }
+    
+    package "Authentication Functions" as Functions {
+        [signup()] as SignupFunc
+        [authenticate()] as AuthFunc
+        [get_user_details()] as GetUserFunc
+        [delete_user()] as DeleteUserFunc
+        [change_password()] as ChangePassFunc
+        [change_email()] as ChangeEmailFunc
+        [get_all_users()] as GetAllUsersFunc
+        [user_exists()] as UserExistsFunc
+    }
+    
+    package "Index Management Functions" as IndexFuncs {
+        [ensure_indexes()] as EnsureIndexes
+        [get_index_info()] as GetIndexInfo
+        [test_index_performance()] as TestPerf
+    }
+    
+    package "Security Functions" as SecurityFuncs {
+        [update_updated_at_column()] as UpdateTrigger
+    }
+}
+
+package "Database Users" {
+    [postgres (Admin)] as PostgresUser
+    [authuser (App)] as AuthUser
+}
+
+package "Security Model" {
+    [SECURITY DEFINER] as SecurityDefiner
+    [Function-Based Access Control] as FuncAccess
+    [Principle of Least Privilege] as LeastPrivilege
+}
+
+' Connections
+WebApp --> Server : HTTP requests
+MobileApp --> Server : HTTP requests
+APIClient --> Server : HTTP requests
+
+Server --> AuthRoutes : Route handling
+AuthRoutes --> Middleware : Request processing
+Middleware --> DBConfig : Database connection
+DBConfig --> ConnPool : Connection management
+ConnPool --> Functions : Function execution
+
+' Security model connections
+Functions --> SecurityDefiner : Uses
+Functions --> FuncAccess : Implements
+Functions --> LeastPrivilege : Follows
+
+' Database access
+Functions --> UserTable : SECURITY DEFINER access
+Functions --> Indexes : Optimized queries
+IndexFuncs --> Indexes : Management
+SecurityFuncs --> UserTable : Trigger functions
+
+' User permissions
+PostgresUser --> UserTable : Full access
+PostgresUser --> Functions : Full access
+PostgresUser --> Indexes : Full access
+AuthUser --> Functions : Execute only
+AuthUser --> UserTable : No direct access
+AuthUser --> Indexes : No direct access
+
+' Index relationships
+MailIndex --> UserTable : Optimizes mail queries
+CreatedIndex --> UserTable : Optimizes timestamp queries
+UpdatedIndex --> UserTable : Optimizes audit queries
+
+' Function relationships
+SignupFunc --> UserTable : INSERT
+AuthFunc --> UserTable : SELECT
+GetUserFunc --> UserTable : SELECT
+DeleteUserFunc --> UserTable : DELETE
+ChangePassFunc --> UserTable : UPDATE
+ChangeEmailFunc --> UserTable : UPDATE
+GetAllUsersFunc --> UserTable : SELECT
+UserExistsFunc --> UserTable : EXISTS query
+
+note right of UserTable
+    PROTECTED RESOURCE
+    Only accessible through functions
+    No direct user access
+    Full audit trail
+end note
+
+note right of Functions
+    SECURITY DEFINER
+    Run with postgres privileges
+    Controlled privilege escalation
+    Input validation
+    SQL injection prevention
+end note
+
+note right of AuthUser
+    NO direct table access
+    NO schema modification
+    NO system catalog access
+    ONLY function execution
+end note
+
+note right of PostgresUser
+    FULL ADMIN ACCESS
+    Direct table access
+    Schema modification
+    Function management
+    System administration
+end note
+
+@enduml

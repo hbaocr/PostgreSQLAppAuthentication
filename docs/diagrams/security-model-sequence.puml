@@ -1,0 +1,121 @@
+@startuml PostgreSQL Security Model Sequence Diagram
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+    ArrowColor #2E86AB
+    ActorBorderColor #2E86AB
+    LifeLineBorderColor #2E86AB
+    ParticipantBorderColor #2E86AB
+    ParticipantBackgroundColor #F8F9FA
+    ParticipantFontColor #2E86AB
+    ActorBackgroundColor #E8F4FD
+    ActorFontColor #2E86AB
+}
+
+title PostgreSQL Security Model - Access Control Flow
+
+actor "Application\n(authuser)" as App
+participant "PostgreSQL\nFunctions" as Functions
+participant "userAuth Table\n(Protected)" as Table
+participant "postgres\n(Admin)" as Admin
+
+== SECURITY MODEL: Function-Based Access Control ==
+
+note over App, Admin: SECURITY LAYER 1: User Permissions\nApp (authuser) has NO direct table access
+
+== Attempted Direct Access (BLOCKED) ==
+
+App -> Table: SELECT * FROM userAuth
+note right: PERMISSION DENIED\nApp cannot access table directly
+
+App -> Table: INSERT INTO userAuth VALUES (...)
+note right: PERMISSION DENIED\nApp cannot insert directly
+
+App -> Table: UPDATE userAuth SET ... WHERE ...
+note right: PERMISSION DENIED\nApp cannot update directly
+
+App -> Table: DELETE FROM userAuth WHERE ...
+note right: PERMISSION DENIED\nApp cannot delete directly
+
+== Secure Function-Based Access (ALLOWED) ==
+
+note over App, Admin: SECURITY LAYER 2: Function Execution\nApp can ONLY execute predefined functions
+
+App -> Functions: SELECT authenticate('user@example.com', 'password')
+note right: ALLOWED: Function execution permitted
+
+note over Functions: SECURITY LAYER 3: SECURITY DEFINER\nFunction runs with postgres privileges
+
+Functions -> Table: SELECT salt, hashpass FROM userAuth WHERE mail = 'user@example.com'
+note right: ALLOWED: Function has elevated privileges
+
+Table -> Functions: Return data
+Functions -> App: Return result
+
+== User Management Through Functions ==
+
+App -> Functions: SELECT signup(123, 'new@example.com', 'pass')
+note right: ALLOWED: Function execution
+
+Functions -> Table: SELECT COUNT(*) FROM userAuth WHERE mail = 'new@example.com'
+note right: ALLOWED: Function has elevated privileges
+
+Functions -> Table: INSERT INTO userAuth (userId, mail, salt, hashpass) VALUES (...)
+note right: ALLOWED: Function has elevated privileges
+
+Table -> Functions: User created
+Functions -> App: Success response
+
+== Admin Direct Access (ALLOWED) ==
+
+note over Admin: ADMIN USER: Full access to everything
+
+Admin -> Table: SELECT * FROM userAuth
+note right: ALLOWED: Admin has full privileges
+
+Admin -> Table: INSERT INTO userAuth VALUES (...)
+note right: ALLOWED: Admin has full privileges
+
+Admin -> Table: UPDATE userAuth SET ... WHERE ...
+note right: ALLOWED: Admin has full privileges
+
+Admin -> Table: DELETE FROM userAuth WHERE ...
+note right: ALLOWED: Admin has full privileges
+
+== Security Verification Flow ==
+
+App -> Functions: SELECT user_exists('test@example.com')
+note right: ALLOWED: Function execution
+
+Functions -> Table: SELECT EXISTS(SELECT 1 FROM userAuth WHERE mail = 'test@example.com')
+note right: ALLOWED: Function has elevated privileges
+
+Table -> Functions: Return boolean result
+Functions -> App: Return result
+
+== Error Handling and Security ==
+
+App -> Functions: SELECT authenticate(''; DROP TABLE userAuth; --', 'pass')
+note right: SQL INJECTION PREVENTED\nParameterized queries block attacks
+
+Functions -> Functions: Input validation
+Functions -> App: Return error (safe)
+
+App -> Functions: SELECT authenticate(NULL, 'pass')
+note right: NULL HANDLING\nEdge cases handled safely
+
+Functions -> Functions: NULL validation
+Functions -> App: Return error (safe)
+
+== Security Model Summary ==
+
+note over App, Admin: SECURITY ARCHITECTURE IMPLEMENTED
+
+note over App: NO direct table access\nNO schema modification\nNO system catalog access\nONLY function execution
+
+note over Functions: SECURITY DEFINER\nRun with postgres privileges\nControlled privilege escalation\nInput validation\nSQL injection prevention
+
+note over Table: PROTECTED RESOURCE\nOnly accessible through functions\nNo direct user access\nFull audit trail
+
+note over Admin: FULL ADMIN ACCESS\nDirect table access\nSchema modification\nFunction management\nSystem administration
+
+@enduml

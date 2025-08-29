@@ -1,0 +1,19 @@
+@startuml PostgreSQL Authentication System
+title PostgreSQL Authentication System Architecture
+
+actor "Client" as C
+participant "Node.js Server" as S
+participant "PostgreSQL Functions" as F
+database "userAuth Table" as T
+actor "postgres (Admin)" as A
+
+C -> S : HTTP requests
+S -> F : Function calls
+F -> T : Database operations
+A -> T : Direct access
+
+note right of F : SECURITY DEFINER\nFunctions run with admin privileges
+note right of T : Protected resource\nOnly accessible through functions
+note right of A : Full admin access\nCan modify schema and data
+
+@enduml
